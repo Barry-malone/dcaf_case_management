@@ -1,13 +1,23 @@
 Style/ClassAndModuleChildren:
   Enabled: false
 
-Documentation: 
+Style/FrozenStringLiteralComment:
   Enabled: false
+
+Style/SymbolArray:
+  Enabled: false
+
+Lint/AmbiguousRegexpLiteral:
+  Enabled: false # this is a tremendously stupid rule
 
 Rails:
   Enabled: true
 
+Bundler/OrderedGems:
+  Enabled: false
+
 AllCops:
+  TargetRubyVersion: 2.6.5
   Exclude: 
     - db/**/*
     - bin/**/*

@@ -1,54 +1,87 @@
 require 'test_helper'
 
-class CallsControllerTest < ActionController::TestCase
+class CallsControllerTest < ActionDispatch::IntegrationTest
   before do
     @user = create :user
     sign_in @user
-    @pregnancy = create :pregnancy
+    @patient = create :patient
+  end
+
+  describe 'new method' do
+    it 'should respond successfully' do
+      get new_patient_call_path(@patient), xhr: true
+      assert_response :success
+    end
   end
 
   describe 'create method' do
     before do
-      @call = attributes_for :call
-      post :create, pregnancy_id: @pregnancy.id, call: @call, format: :js
+      @call = attributes_for :call, status: 'Reached patient'
+      post patient_calls_path(@patient), params: { call: @call }, xhr: true
     end
 
     it 'should create and save a new call' do
-      assert_difference 'Pregnancy.find(@pregnancy).calls.count', 1 do
-        post :create, call: @call, pregnancy_id: @pregnancy.id, format: :js
+      assert_difference 'Patient.find(@patient).calls.count', 1 do
+        post patient_calls_path(@patient), params: { call: @call }, xhr: true
       end
     end
 
     it 'should respond success if patient is not reached' do
-      call = attributes_for :call, status: 'Left voicemail'
-      post :create, call: call, pregnancy_id: @pregnancy.id, format: :js
-      assert_response :success
-    end
-
-    it 'should redirect to the edit pregnancy path if patient is reached' do
-      assert_redirected_to edit_pregnancy_path(@pregnancy)
-    end
-
-    it 'should render create.js.erb if patient is not reached' do
       ['Left voicemail', "Couldn't reach patient"].each do |status|
-        @call[:status] = status
-        post :create, call: @call, pregnancy_id: @pregnancy.id, format: :js
-        assert_template 'calls/create'
+        call = attributes_for :call, status: status
+        post patient_calls_path(@patient), params: { call: call }, xhr: true
+        assert_response :success
       end
+    end
+
+    it 'should redirect to the edit patient path if patient is reached' do
+      assert_redirected_to edit_patient_path(@patient)
     end
 
     it 'should not save and flash an error if status is blank or bad' do
       [nil, 'not a real status'].each do |bad_status|
-        @call[:status] = bad_status
-        assert_no_difference 'Pregnancy.find(@pregnancy).calls.count' do
-          post :create, call: @call, pregnancy_id: @pregnancy.id, format: :js
+        call = attributes_for :call, status: bad_status
+        assert_no_difference 'Patient.find(@patient).calls.count' do
+          post patient_calls_path(@patient), params: { call: call }, xhr: true
         end
-        assert_redirected_to root_path
+        assert_response :bad_request
       end
     end
 
     it 'should log the creating user' do
-      assert_equal Pregnancy.find(@pregnancy).calls.last.created_by, @user
+      assert_equal Patient.find(@patient).calls.last.created_by, @user
+    end
+  end
+
+  describe 'destroy method' do
+    it 'should destroy a call' do
+      @patient.calls.create attributes_for(:call, created_by: @user)
+      call = @patient.calls.first
+      assert_difference 'Patient.find(@patient).calls.count', -1 do
+        delete patient_call_path(@patient, call), params: { id: call.id },
+                                                  xhr: true
+      end
+    end
+
+    it 'should not allow user to destroy calls created by others' do
+      @patient.calls.create attributes_for(:call, created_by: create(:user))
+      call = @patient.calls.first
+      assert_no_difference 'Patient.find(@patient).calls.count' do
+        delete patient_call_path(@patient, call), params: { id: call.id },
+                                                  xhr: true
+      end
+      assert_response :forbidden
+    end
+
+    it 'should not allow user to destroy old calls' do
+      @patient.calls.create attributes_for(:call, created_by: @user,updated_at: Time.zone.now - 1.day)
+      call = @patient.calls.first
+
+      assert_no_difference 'Patient.find(@patient).calls.count' do
+        delete patient_call_path(@patient, call), params: { id: call.id },
+                                                  xhr: true
+      end
+      assert_response :forbidden
     end
   end
 end

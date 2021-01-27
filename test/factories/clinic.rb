@@ -1,8 +1,11 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :clinic do
-    pregnancy
-    name 'Friendly Clinic'
-    city 'Washington'
-    state 'DC'
+    sequence :name do |n|
+      "Friendly Clinic #{n}"
+    end
+    street_address { '123 Fake Street' }
+    city { 'Washington' }
+    state { 'DC' }
+    zip { '20011' }
   end
 end

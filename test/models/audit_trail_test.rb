@@ -5,6 +5,8 @@ class AuditTrailTest < ActiveSupport::TestCase
     @user = create :user
     @patient = create :patient, name: 'Susie Everyteen',
                                 primary_phone: '111-222-3333',
+                                appointment_date: Time.zone.now + 5.days,
+                                initial_call_date: Time.zone.now + 3.days,
                                 created_by: @user
   end
 
@@ -17,35 +19,48 @@ class AuditTrailTest < ActiveSupport::TestCase
     it 'should record the creating user' do
       assert_equal @patient.created_by, @user
     end
-
-    it 'should track proper info' do
-      # TODO: add pregnancy and clinic info
-      tracked_fields =
-        %w(name primary_phone other_contact other_phone other_contact_relationship updated_by_id)
-      assert_equal Patient.tracked_fields,
-                   tracked_fields
-    end
   end
 
   describe 'methods' do
     before do
-      @patient.update_attributes name: 'Yolo', primary_phone: '123-456-9999'
+      @clinic = create :clinic
+      @patient.update_attributes name: 'Yolo',
+                                 primary_phone: '123-456-9999',
+                                 appointment_date: Time.zone.now + 10.days,
+                                 city: 'Canada',
+                                 clinic: @clinic,
+                                 special_circumstances: ['A', '', 'C', '']
       @track = @patient.history_tracks.second
     end
 
-    it 'should conveniently render changed fields' do
-      assert_equal @track.tracked_changes_fields,
-                   'Name<br>Primary phone'
+    it 'should conveniently render the date' do
+      assert_equal Time.zone.now.display_date,
+                   @track.date_of_change
     end
 
-    it 'should conveniently render what they were before' do
-      assert_equal @track.tracked_changes_from,
-                   'Susie Everyteen<br>1112223333'
+    it 'should default to System if it cannot find a user' do
+      assert_equal @track.changed_by_user, 'System'
     end
 
-    it 'should conveniently render what they are now' do
-      assert_equal @track.tracked_changes_to,
-                   'Yolo<br>1234569999'
+    it 'should return shaped changes as a single dict' do
+      assert_equal @track.shaped_changes,
+                   { 'name' => { original: 'Susie Everyteen', modified: 'Yolo' },
+                     'primary_phone' => { original: '1112223333', modified: '1234569999' },
+                     'appointment_date' =>{ original: (Time.zone.now + 5.days).display_date, modified: (Time.zone.now + 10.days).display_date },
+                     'special_circumstances' =>{ original: '(empty)', modified: 'A, C' },
+                     'city' =>{ original: '(empty)', modified: 'Canada' },
+                     'clinic_id' =>{ original: '(empty)', modified: @clinic.name },
+                   }
+    end
+  end
+
+  describe 'marked urgent' do
+    it 'should return true if urgent flag was changed to true' do
+      @patient = create :patient
+      @patient.urgent_flag = true
+      @patient.save
+
+      assert @patient.history_tracks.second.marked_urgent?
     end
   end
 end

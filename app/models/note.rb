@@ -1,3 +1,5 @@
+# A case manager's log of their interactions with a patient.
+# A patient embeds many notes.
 class Note
   include Mongoid::Document
   include Mongoid::Timestamps
@@ -5,13 +7,13 @@ class Note
   include Mongoid::Userstamp
 
   # Relationships
-  embedded_in :pregnancy
+  embedded_in :patient
 
   # Fields
   field :full_text, type: String
 
   # Validations
-  validates :created_by, :full_text, presence: true
+  validates :created_by_id, :full_text, presence: true
 
   # History and auditing
   track_history on: fields.keys + [:updated_by_id],

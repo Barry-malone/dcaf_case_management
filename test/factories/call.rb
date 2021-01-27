@@ -1,7 +1,7 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :call do
-    association :pregnancy
-    status 'Reached patient'
-    created_by { FactoryGirl.create(:user) }
+    association :patient
+    status { 'Reached patient' }
+    created_by { FactoryBot.create(:user) }
   end
 end

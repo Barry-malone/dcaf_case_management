@@ -1,6 +1,21 @@
+# Object representing a case manager.
+# Fields are all devise settings; most of the methods relate to call list mgmt.
 class User
   include Mongoid::Document
+  include Mongoid::Timestamps
   include Mongoid::Userstamp::User
+  include Mongoid::History::Trackable
+  extend Enumerize
+
+  include UserSearchable
+  include CallListable
+  track_history on: fields.keys + [:updated_by_id],
+                  version_field: :version,
+                  track_create: true,
+                  track_update: true,
+                  track_destroy: true
+
+  after_create :send_account_created_email, if: :persisted?
 
   # Devise modules
   devise  :database_authenticatable,
@@ -9,19 +24,25 @@ class User
           :trackable,
           :validatable,
           :lockable,
-          :timeoutable
+          :timeoutable,
+          :omniauthable, omniauth_providers: [:google_oauth2]
   # :rememberable
   # :confirmable
 
+  # Callbacks
+  after_update :send_password_change_email, if: :needs_password_change_email?
+
   # Relationships
-  has_and_belongs_to_many :pregnancies, inverse_of: :users
+  has_and_belongs_to_many :patients, inverse_of: :users
 
   # Fields
   # Non-devise generated
   field :name, type: String
   field :line, type: String
-  field :role, type: String
-  field :call_order, type: Array
+  field :role, default: :cm
+
+  enumerize :role, in: [:cm, :admin, :data_volunteer], predicates: true
+  field :call_order, type: Array # Manipulated by the call list controller
 
   ## Database authenticatable
   field :email,              type: String, default: ''
@@ -48,13 +69,23 @@ class User
   # field :unconfirmed_email,    type: String # Only if using reconfirmable
 
   ## Lockable
-  field :failed_attempts, type: Integer, default: 0 # Only if lock strategy is :failed_attempts
-  # field :unlock_token,    type: String # Only if unlock strategy is :email or :both
+  field :failed_attempts, type: Integer, default: 0
+  # field :unlock_token,    type: String
   field :locked_at,       type: Time
 
+  # An extra hard shutoff field for when a fund wants to shut off a user acct.
+  # We call this disabling in the app, but users/CMs see this as 'Lock/Unlock'.
+  # We do this because Devise calls a temporary account shutoff because of too
+  # many failed attempts an account lock.
+  field :disabled_by_fund, type: Boolean, default: false
+
   # Validations
-  validates :email, :name, presence: true
+  # email presence validated through Devise
+  validates :name, presence: true
+  validates :role, presence: true
   validate :secure_password
+
+  TIME_BEFORE_DISABLED_BY_FUND = 9.months
 
   def secure_password
     return true if password.nil?
@@ -62,73 +93,64 @@ class User
     if pc == false
       errors.add :password, 'Password must include at least one lowercase ' \
                             'letter, one uppercase letter, and one digit. ' \
-                            'Forbidden words include DCAF and password.'
+                            "Forbidden words include #{FUND} and password."
     end
   end
 
-  # ticket 241 recently called criteria:
-  # someone has a call from the current_user
-  # that is less than 8 hours old,
-  # AND they would otherwise be in the call list
+  def self.from_omniauth(access_token)
+    data = access_token.info
+    user = User.find_by email: data['email']
 
-  def recently_called_pregnancies
-    pregnancies.select { |p| recently_called_by_user?(p) }
+    user
   end
 
-  def call_list_pregnancies
-    pregnancies.reject { |p| recently_called_by_user?(p) }
+  def toggle_disabled_by_fund
+    # Since toggle skips callbacks...
+    update disabled_by_fund: !disabled_by_fund
   end
 
-  def add_pregnancy(pregnancy)
-    pregnancies << pregnancy
-    reload
-  end
-
-  def remove_pregnancy(pregnancy)
-    pregnancies.delete pregnancy
-    reload
-  end
-
-  def reorder_call_list(order)
-    update call_order: order
-    save
-    reload
-  end
-
-  def ordered_pregnancies
-    return call_list_pregnancies unless call_order
-    ordered_pregnancies = call_list_pregnancies.sort_by do |pregnancy|
-      call_order.index(pregnancy.id.to_s) || 0
+  def self.disable_inactive_users
+    cutoff_date = Time.zone.now - TIME_BEFORE_DISABLED_BY_FUND
+    inactive_has_logged_in = where(:role.nin => [:admin],
+                                   :current_sign_in_at.lt => cutoff_date)
+    inactive_no_logins = where(:role.nin => [:admin],
+                               :current_sign_in_at => nil,
+                               :created_at.lt => cutoff_date)
+    [inactive_no_logins, inactive_has_logged_in].each do |set|
+      set.update disabled_by_fund: true
     end
-    ordered_pregnancies
   end
 
-  def clear_call_list
-    pregnancies.each do |p|
-      pregnancies.delete(p) if recently_reached_by_user?(p)
-    end
+  def admin?
+    role == 'admin'
+  end
+
+  def allowed_data_access?
+    admin? || data_volunteer?
   end
 
   private
 
   def verify_password_complexity
-    # Enforce length of at least ten
-    return false unless password.length >= 8
-    # we want at least one lower case
-    return false if (password =~ /[a-z]/).nil?
-    # We want at least one uppercase
-    return false if (password =~ /[A-Z]/).nil?
-    # We want at least one digit
-    return false if (password =~ /[0-9]/).nil?
-    # Make sure the word password isn't in there
-    return false if !(password.downcase[/(password|dcaf)/]).nil?
+    return false unless password.length >= 8 # length at least 8
+    return false if (password =~ /[a-z]/).nil? # at least one lowercase
+    return false if (password =~ /[A-Z]/).nil? # at least one uppercase
+    return false if (password =~ /[0-9]/).nil? # at least one digit
+    # Make sure no bad words are in there
+    return false unless password.downcase[/(password|#{FUND})/].nil?
+    true
   end
 
-  def recently_reached_by_user?(preg)
-    preg.calls.any? { |call| call.created_by_id == id && call.recent? && call.reached? }
+  def needs_password_change_email?
+    encrypted_password_changed? && persisted?
   end
 
-  def recently_called_by_user?(preg)
-    preg.calls.any? { |call| call.created_by_id == id && call.recent? }
+  def send_password_change_email
+    # @user = User.find(id)
+    UserMailer.password_changed(id).deliver_now
+  end
+
+  def send_account_created_email
+    UserMailer.account_created(id).deliver_now
   end
 end

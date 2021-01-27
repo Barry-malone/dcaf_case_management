@@ -1,0 +1,10 @@
+$('#accounting-list').empty();
+
+<% if @results.any? %>
+  // Nuke pagination div on search for simplicity's sake
+  $('#pagination-entries').empty();
+  $('nav.pagination').empty();
+
+  // And refresh the table content
+  $("#accounting-list").append("<%= escape_javascript(render partial: 'accountants/table_content', locals: { patients: @results, autosortable: true } ) %>");
+<% end %>

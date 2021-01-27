@@ -1,16 +1,34 @@
+# Create method for calls, plus triggers for modal behavior
 class CallsController < ApplicationController
-  before_action :find_pregnancy, only: [:create]
+  before_action :find_patient, only: [:create, :destroy]
 
   def create
-    @call = @pregnancy.calls.new call_params
+    @call = @patient.calls.new call_params
     @call.created_by = current_user
     if call_saved_and_patient_reached @call, params
-      redirect_to edit_pregnancy_path @pregnancy
+      redirect_to edit_patient_path @patient
     elsif @call.save
       respond_to { |format| format.js }
     else
-      flash[:alert] = 'Call failed to save! Please submit the call again.'
-      redirect_to root_path
+      head :bad_request
+    end
+  end
+
+  def new
+    @patient = Patient.find params[:patient_id]
+    respond_to do |format|
+      format.js
+    end
+  end
+
+  def destroy
+    call = @patient.calls.find params[:id]
+    if call.created_by != current_user || !call.recent?
+      head :forbidden
+    elsif call.destroy
+      respond_to { |format| format.js }
+    else
+      head :bad_request
     end
   end
 
@@ -20,8 +38,8 @@ class CallsController < ApplicationController
     params.require(:call).permit(:status)
   end
 
-  def find_pregnancy
-    @pregnancy = Pregnancy.find params[:pregnancy_id]
+  def find_patient
+    @patient = Patient.find params[:patient_id]
   end
 
   def call_saved_and_patient_reached(call, params)

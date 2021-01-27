@@ -6,8 +6,26 @@
 # minimal Rails specific artifacts
 db/*.sqlite3
 /db/*.sqlite3-journal
+
 /log/*
-/tmp/*
+!/log/.keep
+
+/tmp/cache/*
+/tmp/capybara/*
+/tmp/pids/*
+/tmp/screenshots/*
+/tmp/sockets/*
+/tmp/*.txt
+!/tmp/.keep
+!/tmp/pids/.keep
+!/tmp/cache/.keep
+!/tmp/capybara/.keep
+!/tmp/pids/.keep
+!/tmp/screenshots/.keep
+!/tmp/sockets/.keep
+
+# cert file
+cacert.pem
 
 # various artifacts
 **.war
@@ -74,7 +92,17 @@ config/initializers/secret_token.rb
 # Ignore application configuration
 /config/application.yml
 
+# VS Code
+.vscode/
+
 .sass-cache
 .jekyll-metadata
 .byebug_history
 .ruby-version
+/test/reports/
+/public/packs
+/public/packs-test
+/node_modules
+yarn-debug.log*
+.yarn-integrity
+yarn-error.log

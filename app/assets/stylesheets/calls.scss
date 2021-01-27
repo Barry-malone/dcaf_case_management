@@ -20,6 +20,11 @@ h4.calls-phone {
   text-decoration: underline;
 }
 
+.new-call-entry {
+  font-size: 17px;
+  font-size: 100%;
+}
+
 #calls-btn {
   font-size: 17px;
   padding: 10px 40px;
@@ -43,4 +48,8 @@ h4.calls-phone {
   -webkit-box-shadow: rgba(133,133,133,0.1) 0 0 5px 2px,rgba(133,133,133,0.3) 0 0 2px;
   -moz-box-shadow: rgba(133,133,133,0.1) 0 0 5px 2px,rgba(133,133,133,0.3) 0 0 2px;
   box-shadow: rgba(133,133,133,0.1) 0 0 5px 2px,rgba(133,133,133,0.3) 0 0 2px;
+}
+
+#call_list th[data-sort], #completed_calls th[data-sort], #urgent_patients th[data-sort] {
+    cursor: pointer;
 }

@@ -2,7 +2,8 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
-$dcaf-color: #5D3E8D;
+$daria-color: #5D3E8D;
+$soft-blue: #337ab7;
 $font-size: 17px;
 
 #patient_dashboard {
@@ -10,59 +11,43 @@ $font-size: 17px;
   padding: 15px 0;
 }
 
-.hide-label{
-  label{
-    visibility: hidden;
-  }
+// TODO This should be a class!
+#sections {
+  border-left: 1px solid black;
+  padding-left: 9.5%;
 }
 
-#menu {
-  border-right: 1px solid black;
-  height: 70vh;
-  ul{
-    li{
-      a{
-      &:hover{
-        color: lighten(#337ab7, 20%)
-        }
-      }
-    }
+.abortion-left-menu.nav-pills {
+  font-size: 1rem;
+
+  .nav-link {
+    color: $soft-blue;
+    background-color: white;
   }
-}
 
-.abortion-left-menu {
-  font-size: 22px;
-
-  li {
-    // padding-left: 10px;
+  a.nav-link.active {
+    color: $daria-color;
     background-color: white;
 
-    a:hover {
-      color: #337ab7;
-      background-color: white;
-    }
-  }
-
-  li.active {
-
-    a, a:hover, a:active, a:focus {
-      color: #5D3E8D;
-      background-color: white;
-    }
-
-    a:before {
-      font-family: 'Glyphicons Halflings';
-      content: "\e080";
+    &:before {
+      display: none;
+      font-family: "Font Awesome 5 Free";
+      font-weight: 900;
+      content: "\f054";
       margin-left: -1.5em;
-      padding-right: .5em;
-      color: #5D3E8D;
-      
+      padding-right: .85em;
+      color: $daria-color;
+    }
+
+    .svg-inline--fa {
+      margin-left: -1.5em;
+      margin-right: .85em;
     }
   }
-  a.submit-btn {
-    font-size: 22px;
-  }
 
+  a.submit-btn, a.cancel-btn {
+    font-size: 1rem;
+  }
 }
 
 .border-side {
@@ -72,6 +57,7 @@ $font-size: 17px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     background: #f1f1f1;
+    padding-left: 0px !important;
   }
   tr {
     td {
@@ -81,92 +67,11 @@ $font-size: 17px;
   }
 }
 
-.modal.pledge_modal {
-	display: none;
-  height: 475px;
-  width: 500px;
-  position: fixed;
-  margin: 0 auto;
-  top: auto;
-  bottom: auto;
-  background-color: white;
+#submit-pledge-button, #cancel-pledge-button {
+  font-size: 1rem;
   font-weight: bold;
-  font-size: 14px;
-  box-sizing: border-box;
-  .modal-cover {
-    height: 100%;
-  }
-	.pledge_modal_header {
-	  width: 100%;
-	  height: 50px;
-	  background-color: $dcaf-color;
-	  font-size: 20px;
-	  padding: 10px;
-	  color: white;
-	  font-weight: normal;
-	}
+}
 
-  .pledge_header_text {
-    float: left;
-  }
-
-  .pledge_close {
-    font-size: 24px;
-    color: white;
-    padding: 0 10px;
-    float: right;
-  }
-
-  .pledge_modal_screen2, .pledge_modal_screen3 {
-    display: none;
-  }
-
-	.pledge_intro {
-		padding: 25px;
-	  font-size: 20px;
-	  font-weight: normal;
-	}
-
-	.pledge_form {
-    padding: 0 25px;
-	  line-height: 3;
-	}
-
-	.pledge_modal_category {
-	  font-weight: normal;
-	  display: inline-block;
-	  width: 150px;
-	}
-
-  .pledge_process_btn {
-    bottom: 10px;
-    margin: 25px;
-    cursor: pointer;
-    right: 0;
-    font-size: 14px;
-    position: absolute;
-  }
-
-  .pledge_cancel {
-    color: red;
-    position: absolute;
-    right: 100px;
-    padding-top: 6px;
-    bottom: 14px;
-  }
-
-  .pledge_back_submit, .pledge_back_review {
-    left: 0;
-    bottom: 14px;
-  }
-
-  .check_input {
-    font-weight: bold;
-  }
-
-  .pledge_sent_check {
-    height: 15px;
-    width: 15px;
-    margin-right: 5px;
-  }
+a.submit-pledge-button, a.cancel-pledge-button {
+  text-decoration: none;
 }

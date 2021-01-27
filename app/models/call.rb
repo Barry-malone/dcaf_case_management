@@ -1,11 +1,13 @@
+# Object representing a case manager dialing a patient.
 class Call
   include Mongoid::Document
   include Mongoid::Timestamps
   include Mongoid::History::Trackable
   include Mongoid::Userstamp
+  include EventLoggable
 
   # Relationships
-  embedded_in :pregnancy
+  embedded_in :can_call, polymorphic: true
 
   # Fields
   field :status, type: String
@@ -16,7 +18,7 @@ class Call
                       "Couldn't reach patient"]
   validates :status,  presence: true,
                       inclusion: { in: allowed_statuses }
-  validates :created_by, presence: true
+  validates :created_by_id, presence: true
 
   # History and auditing
   track_history on: fields.keys + [:updated_by_id],
@@ -32,5 +34,15 @@ class Call
 
   def reached?
     status == 'Reached patient'
+  end
+
+  def event_params
+    {
+      event_type:   status,
+      cm_name:      created_by&.name || 'System',
+      patient_name: can_call.name,
+      patient_id:   can_call.id,
+      line:         can_call.line
+    }
   end
 end

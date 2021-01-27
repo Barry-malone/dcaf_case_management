@@ -1,29 +1,19 @@
-<div class="modal fade new-call" tabindex="-1" role="dialog" id="call-<%= p.patient.primary_phone_display %>">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-body">
-        <div class="calls-layout">
-          <button type="button" class="close close-terms" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title calls-request">Call <b><%= p.patient.name %></b> now:</h4>
-          <br>
-          <h4 class="calls-phone"><%= p.patient.primary_phone_display %></h4>
-          <br>
+<div class="modal-body">
+  <div class="calls-layout">
+    <button type="button" class="close close-terms" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title calls-request">
+      <%= t('call.new.call_now', name: patient.name) %></h4>
+      <br>
+      <%= display_other_contact_and_phone_if_exists(patient) %>
 
-          <p><%= link_to "I reached the patient", pregnancy_calls_path(p, call: { status: 'Reached patient'} ), method: :post, class: 'btn btn-primary', id: 'calls-btn' %></p>
+      <%= content_tag :h4, patient.primary_phone_display, class: 'calls-phone' %>
 
-          <% if p.voicemail_preference == :no %>
-            <p class='text-danger'><strong>Do not leave this patient a voicemail</strong></p>
-          <% elsif p.voicemail_preference == :yes %>
-            <p class='text-success'>Voicemail OK; Okay to identify as DCAF</p>
-            <p><%= link_to "I left a voicemail for the patient", pregnancy_calls_path(p, call: { status: "Left voicemail" } ), method: :post, remote: true, class: 'calls-response' %></p>
-          <% elsif p.voicemail_preference == :not_specified %>
-            <p class='text-warning'><strong>Voicemail OK; Do not identify as DCAF</strong></p>
-            <p><%= link_to "I left a voicemail for the patient", pregnancy_calls_path(p, call: { status: "Left voicemail" } ), method: :post, remote: true, class: 'calls-response' %></p>
-          <% end %>
+      <%= display_reached_patient_link patient %>
 
-          <p><%= link_to "I couldn't reach the patient", pregnancy_calls_path(p, call: { status: "Couldn't reach patient" } ), method: :post, remote: true, class: 'calls-response' %></p>
-        </div><!-- calls-layout -->
-      </div><!-- /.modal-body -->
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+      <%= display_voicemail_link_with_warning patient %>
+
+      <%= display_couldnt_reach_patient_link patient %>
+
+      <%= display_note_text_for patient.most_recent_note %>
+  </div><!-- calls-layout -->
+</div><!-- /.modal-body -->

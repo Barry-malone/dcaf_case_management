@@ -1,0 +1,24 @@
+<div class="row">
+  <div class="col">
+    <%= bootstrap_form_with model: config, inline: true, local: true do |f| %>
+      <%= f.text_area :options, label: "#{config.config_key.to_s.humanize} options",
+                                value: config.config_value.try(:values_at, 'options')
+                                                          .try(:join, ', '),
+                                help: config.help_text,
+                                id: "config_options_#{config.config_key}" %>
+      <%= f.submit t('configs.config.update_options_for', option: config.config_key.to_s.humanize), class: 'btn btn-primary' %>
+    <% end %>  
+  </div>
+
+  <div class="col" id="<%= config.config_key.to_s %>_options_list">
+    <% if Config::HELP_TEXT_OVERRIDES[config.config_key.to_sym] %>
+    <% else %>
+      <label><%= t('configs.config.current_options') %></label>
+      <br />
+      <% public_send("#{config.config_key}_options").each do |opt| %>
+        <%= opt %><br />
+      <% end %>
+    <% end %>
+  </div>
+</div>
+<br />

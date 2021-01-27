@@ -1,0 +1,20 @@
+<h1 class="border-bottom title"><%= t 'accountants.search_cases' %></h1>
+
+<%= render partial: 'accountants/search_form' %>    
+
+<h1 class='border-bottom title'>
+  <%= t 'accountants.title' %>
+  <small class='float-right accountants-pagination'>
+    <span class='pagination-entries'>
+      <%= page_entries_info @patients, entry_name: 'patient' %>
+    </span>
+    <%= paginate @patients %> 
+  </small>
+</h1>
+
+<div id="accounting-list">
+  <%= render partial: 'accountants/table_content',
+             locals: { patients: @patients, autosortable: true } %>
+</div>
+
+<%= render partial: "patients/modal" %>

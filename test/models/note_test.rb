@@ -3,8 +3,8 @@ require 'test_helper'
 class NoteTest < ActiveSupport::TestCase
   before do
     @user = create :user
-    @pregnancy = create :pregnancy
-    @note = create :note, pregnancy: @pregnancy, created_by: @user
+    @patient = create :patient
+    @note = create :note, patient: @patient, created_by: @user
   end
 
   describe 'validation' do
@@ -19,18 +19,16 @@ class NoteTest < ActiveSupport::TestCase
       refute @note.valid?
     end
 
-    it 'requires a real user' do
-      @note.created_by_id = nil
-      refute @note.valid?
-      @note.created_by_id = 'not a user'
+    it 'requires a creator' do
+      @note.created_by = nil
       refute @note.valid?
     end
   end
 
   describe 'relationships' do
-    it 'should have an associated pregnancy' do
-      assert @note.respond_to? :pregnancy
-      assert @note.pregnancy
+    it 'should have an associated patient' do
+      assert @note.respond_to? :patient
+      assert @note.patient
     end
   end
 
